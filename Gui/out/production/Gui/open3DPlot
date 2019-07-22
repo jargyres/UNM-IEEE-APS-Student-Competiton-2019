@@ -1,0 +1,15 @@
+#!/bin/bash
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+cd $DIR
+
+pythonOpening="python3 OpeningMatlabMessage.py"
+
+matlab="/usr/local/MATLAB/R2018b/bin/matlab"
+
+matlabplot="$matlab -nodesktop -nosplash -r \"Plot3d; exit;\" | tail -n +11"
+
+eval $pythonOpening
+
+
+eval $matlabplot
