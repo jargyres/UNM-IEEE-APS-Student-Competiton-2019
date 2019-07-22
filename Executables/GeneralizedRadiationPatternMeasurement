@@ -1,0 +1,167 @@
+#!/bin/bash
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
+cd $DIR
+
+
+
+touch $DIR/config.txt
+
+chmod a+x $DIR/config.txt
+
+#configure the BladeRF for setup
+
+#frequency=3085
+fr=$1
+sampleoffset=5e6
+samplefr=$( awk -v a=$sampleoffset -v b=$fr 'BEGIN{print b-a}' )
+samplerate=20e6
+bandwidth=20e6
+
+
+pythonFFT="python3 $DIR/newFFT.py"
+
+#pythonPlot="gnome-terminal -- bash -c "\""python3 /home/john/FinalScripts/PythonPlot.py"\"""
+
+pythonPlot="gnome-terminal -x python3 $DIR/PythonPlot.py"
+
+pythonturn="'python3 BottomTurn.py'"
+
+pythonturntozero="python3 turntozero.py"
+
+pythonReverseTurn="python3 ReverseBottomTurn.py"
+
+rp="ssh pi@192.168.2.2"
+
+#check at position 0
+
+#initialize 0 degrees for data.csv
+
+eval "bladeRF-cli -d *:serial=fe2c -l $DIR/hostedx115-latest.rbf"
+
+
+counter=0
+
+echo "set frequency tx1 $fr" >> $DIR/config.txt
+#echo "set agc tx1 off" >> config.txt
+#echo "set gain tx1 30" >> config.txt
+echo "set gain tx 50" >> $DIR/config.txt
+echo "set bandwidth tx1 $bandwidth" >> $DIR/config.txt
+echo "set samplerate tx1 $samplerate" >> $DIR/config.txt
+echo "tx config file=$DIR/testpythonfile.dat format=bin repeat=0" >> $DIR/config.txt
+echo "set frequency rx $samplefr" >> $DIR/config.txt
+## echo "set agc rx1 off" >> config2.txt
+echo "set gain rx1 30" >> $DIR/config.txt
+#echo "cal lms" >> $DIR/config.txt
+#echo "cal dc rx" >> $DIR/config.txt
+echo "set bandwidth rx $bandwidth" >> $DIR/config.txt
+echo "set samplerate rx $samplerate" >> $DIR/config.txt
+echo "rx config file=$DIR/RadPattern'"$counter"'sample.sc16q11 format=bin n=2000" >> $DIR/config.txt
+echo "tx start;" >> $DIR/config.txt
+echo "tx" >> $DIR/config.txt
+echo "tx wait 250; tx stop" >> $DIR/config.txt
+echo "rx start;" >> $DIR/config.txt
+echo "rx" >> $DIR/config.txt
+echo "rx wait" >> $DIR/config.txt
+echo "exit" >> $DIR/config.txt
+
+pythonCreateSignal="python3 $DIR/CreateSignal.py "\""$DIR/testpythonfile"\"" $fr $samplerate"
+
+
+
+#generate the transmission file, transmit, and receive 5 MHz offset from the transmission
+eval $pythonCreateSignal; bladeRF-cli -d *:serial=fe2c -s $DIR/config.txt; rm $DIR/config.txt; rm $DIR/testpythonfile.dat
+	
+
+
+eval "$pythonFFT $DIR/RadPattern'"$counter"'sample.sc16q11 $counter $fr" 
+
+rm $DIR/csvfile.csv
+	
+#rm radPattern*
+
+eval $rp $pythonturn
+
+eval $pythonPlot
+
+((counter+=5))
+
+#eval $rp $pythonturn
+
+while [ $counter -le 355 ]
+do
+	echo "Degree = $counter"
+
+	#echo "Opening Python"
+
+	echo "set frequency tx1 $fr" >> $DIR/config.txt
+	#echo "set agc tx1 off" >> config.txt
+	#echo "set gain tx1 30" >> config.txt
+	echo "set gain tx 50" >> $DIR/config.txt
+	echo "set bandwidth tx1 $bandwidth" >> $DIR/config.txt
+	echo "set samplerate tx1 $samplerate" >> $DIR/config.txt
+	echo "tx config file=$DIR/testpythonfile.dat format=bin repeat=0" >> $DIR/config.txt
+	echo "set frequency rx $samplefr" >> $DIR/config.txt
+	#echo "set agc rx1 off" >> config2.txt
+	echo "set gain rx 30" >> config.txt
+	echo "set bandwidth rx $bandwidth" >> $DIR/config.txt
+	echo "set samplerate rx $samplerate" >> $DIR/config.txt
+	echo "rx config file=$DIR/radPattern'"$counter"'sample.sc16q11 format=bin n=2000" >> $DIR/config.txt
+	echo "tx start;" >> $DIR/config.txt
+	echo "tx" >> $DIR/config.txt
+	echo "tx wait 250; tx stop" >> $DIR/config.txt
+	echo "rx start;" >> $DIR/config.txt
+	echo "rx" >> $DIR/config.txt
+	echo "rx wait" >> $DIR/config.txt
+	echo "exit" >> $DIR/config.txt
+
+
+	pythonCreateSignal="python3 $DIR/CreateSignal.py "\""$DIR/testpythonfile"\"" $fr $samplerate"
+
+
+
+	#generate the transmission file, transmit, and receive 5 MHz offset from the transmission
+	eval $pythonCreateSignal; bladeRF-cli -d *:serial=fe2c -s $DIR/config.txt; rm $DIR/config.txt; rm $DIR/testpythonfile.dat
+	
+	eval $rp $pythonturn
+
+	eval "$pythonFFT $DIR/radPattern'"$counter"'sample.sc16q11 $counter $fr" 
+
+	rm $DIR/csvfile.csv
+
+	rm $DIR/radPattern*
+	
+	((counter+=5))
+
+done
+
+
+counter2=0
+eval $rp $pythonturn
+eval "$pythonFFT $DIR/RadPattern'"$counter2"'sample.sc16q11 $counter $fr"
+
+rm $DIR/csvfile.csv
+
+rm $DIR/RadPattern*
+
+eval $rp $pythonReverseTurn
+
+eval $rp $pythonReverseTurn
+
+eval $rp $pythonturntozero
+
+
+
+
+
+
+#matlabfft="$matlab -nodesktop -nosplash -r \"fft_func($counter); exit;\" | tail -n +11"
+
+#matlabplot="$matlab -nodesktop -nosplash -r \"plot_rp;\" | tail -n +11"
+
+#matlab="/usr/local/MATLAB/R2018b/bin/matlab"
+
+#matlab -nodisplay -nosplash -nodesktop -r "run('path/to/your/script.m');exit;" | tail -n +11
+
+

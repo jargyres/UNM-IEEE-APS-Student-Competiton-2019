@@ -1,0 +1,338 @@
+#!/bin/bash
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+cd $DIR
+
+touch $DIR/config.txt
+
+chmod a+x $DIR/config.txt
+
+
+####set up our python scripts as variables to call
+
+pythonFFT="python3 $DIR/S11FFT.py"
+pythonFFT2="python3 $DIR/S11FFTPart2.py"
+pythonCSVFinal="python3 $DIR/FinalS11FFT.py"
+pythonPlot="python3 $DIR/finalS11Plot.py"
+
+
+####set up our variables to control the python scripts and bladeRF devices
+
+#center frequency for part1
+#fr=$1
+
+
+#center frequency for part2 is same as part 1
+#fr2=$1
+
+
+read -r -p "Enter Center Frequency ( ex: to enter 3.1 GHz, enter 3.1e9 )  " input
+
+fr=$input
+fr2=$input
+
+
+
+
+
+while true
+do
+
+read -r -p "Choose Resolution? [High (1 MHz steps), Medium (5 MHz steps), Low (10 MHz steps)]  " input2
+
+case $input2 in
+	High)
+		pythonoffset=1e6
+#		echo $pythonoffset
+		break;;
+	Medium)
+		pythonoffset=5e6
+#		echo $pythonoffset
+		break;;
+	Low)
+		pythonoffset=1e7
+#		echo $pythonoffset
+		
+		break;;
+	
+	*)
+		echo "Invalid input"
+		;;
+
+esac
+
+done
+
+while true
+do
+
+read -r -p "Choose Bandwidth [600 MHz, 400 MHz, 200 MHz]  " input3
+
+case $input3 in
+	600)
+		pythoninitialoffset=3e8
+#		echo $pythoninitialoffset
+		break;;
+	400)
+		pythoninitialoffset=2e8
+#		echo $pythoninitialoffset
+		break;;
+	200)
+		pythoninitialoffset=1e8
+#		echo $pythoninitialoffset
+		break;;
+	*)
+		echo "Invalid input"
+		;;
+	
+esac
+
+done
+
+steps=$( awk -v a=$pythoninitialoffset -v b=$pythonoffset 'BEGIN{print 4 * (a / b)}' )
+seconds=$( awk -v a=$steps -v b=0.500 'BEGIN{print (a * b) }' )
+minutes=$(awk -v a=$seconds -v b=60 'BEGIN{print (a / b) + 1 }' )
+
+echo "Estimated Time = $minutes minutes" 
+
+read -r -p "Press "\""Enter"\"" to start S11 Measurement" input3
+
+case $input3 in
+
+	*)
+		;;
+
+esac
+
+
+
+#sleep 30
+
+
+#amount to subrtact from center frequency
+#pythoninitialoffset=2e8
+#pythoninitialoffset=2e8
+
+
+#normal offset to add when doing the sweep
+#pythonoffset=1e7
+#pythonoffset=5e6
+
+sampleoffset=5e6
+
+#end frequency of the sweep
+frend=$( awk -v a=$pythoninitialoffset -v b=$fr 'BEGIN{print b+a}' )
+
+
+#change our center frequency to our start frequency using the initial offset
+fr=$( awk -v a=$pythoninitialoffset -v b=$fr 'BEGIN{print b-a}' )
+
+#end frequency of part 2 is same as part 1
+frend2=$( awk -v a=$pythoninitialoffset -v b=$fr2 'BEGIN{print b+a}' )
+
+#start frequency of part 2 is same as part 1
+fr2=$( awk -v a=$pythoninitialoffset -v b=$fr2 'BEGIN{print b-a}' )
+
+
+samplefr=$( awk -v a=$sampleoffset -v b=$fr 'BEGIN{print b-a}' )
+
+samplefrend=$( awk -v a=$pythoninitialoffset -v b=$samplefr 'BEGIN{print b-a}' )
+
+samplefr2=$( awk -v a=$sampleoffset -v b=$fr 'BEGIN{print b-a}' )
+
+samplefrend2=$( awk -v a=$pythoninitialoffset -v b=$samplefr2 'BEGIN{print b-a}' )
+
+
+#samplerate of the transmitting and receiving
+samplerate=20e6
+
+#bandwidth of the transmitting and receiving
+bandwidth=20e6
+
+#counters used to keep track of names of the files created
+firstcounter=0
+secondcounter=0
+
+####load the fpga to the bladeRF devices
+
+echo "start frequency = $fr Hz"
+echo "end frequency = $frend Hz"
+
+
+#bladeRF xA9
+#eval "bladeRF-cli -d *:serial=104b -l /home/john/Downloads/hostedxA9-latest.rbf"
+
+#echo "set gain rx 30" >> /home/john/FinalScripts/config.txt
+#echo "cal lms" >> /home/john/FinalScripts/config.txt
+#echo "cal dx rx" >> /home/john/FinalScripts/config.txt
+#echo "exit" >> /home/john/FinalScripts/config.txt
+
+#bladeRF x115
+eval "bladeRF-cli -d *:serial=fe2c -l $DIR/hostedx115-latest.rbf"
+
+
+
+S11Part1 () {
+
+
+while [ $fr -le $frend ]
+do
+	#set up the bladeRFx115 for transitting and receiving 
+	echo "set frequency tx1 $fr" >> $DIR/config.txt
+	#echo "set agc tx1 off" >> config.txt
+	#echo "set gain tx1 30" >> config.txt
+	echo "set bandwidth tx1 20M" >> $DIR/config.txt
+	echo "set samplerate tx1 $samplerate" >> $DIR/config.txt
+	echo "tx config file=$DIR/testpythonfile.dat format=bin repeat=0" >> $DIR/config.txt
+	echo "set frequency rx $samplefr" >> $DIR/config.txt
+	#echo "set agc rx1 off" >> config2.txt
+	#echo "set gain rx1 30" >> config2.txt
+	echo "set bandwidth rx 20M" >> $DIR/config.txt
+	echo "set samplerate rx $samplerate" >> $DIR/config.txt
+	echo "rx config file=$DIR/sweeptestPart1_'"$firstcounter"'sample.sc16q11 format=bin n=5000" >> $DIR/config.txt
+	echo "tx start;" >> $DIR/config.txt
+	echo "tx" >> $DIR/config.txt
+	echo "tx wait 500; tx stop" >> $DIR/config.txt
+	echo "rx start;" >> $DIR/config.txt
+	echo "rx" >> $DIR/config.txt
+	echo "rx wait" >> $DIR/config.txt
+	echo "clear" >> $DIR/config.txt
+	echo "exit" >> $DIR/config.txt
+
+
+	pythonCreateSignal="python3 $DIR/CreateSignal.py "\""$DIR/testpythonfile"\"" $fr $samplerate"
+
+	echo $fr
+
+	#generate the transmission file, transmit, and receive 5 MHz offset from the transmission
+	eval $pythonCreateSignal; bladeRF-cli -d *:serial=fe2c -s $DIR/config.txt; rm $DIR/config.txt
+
+
+	#take the FFT and write to a csv: <frequency, power>
+	eval "$pythonFFT $DIR/sweeptestPart1_'"$firstcounter"'sample.sc16q11 $firstcounter $fr"
+
+	#remove the leftover file generated by the FFT script
+	rm $DIR/csvfile.csv
+	
+	#remove the sample we just took
+	rm $DIR/sweeptest*
+
+	#remove the transmit file
+	rm $DIR/testpythonfile.dat
+
+	#increase the frequency for the next sample
+	fr=$( awk -v a=$pythonoffset -v b=$fr 'BEGIN{print b+a}' )
+	samplefr=$( awk -v a=$pythonoffset -v b=$samplefr 'BEGIN{print b+a}' )
+	
+	#increase the counter so we dont overwrite any data in the csv
+	((firstcounter+=1))
+
+
+done
+
+
+}
+
+
+S11Part2 () {
+
+
+
+
+while [ $fr2 -le $frend2 ]
+do
+
+	#set up the bladeRFx115 for transitting and receiving 
+	echo "set frequency tx1 $fr2" >> $DIR/config.txt
+	#echo "set agc tx1 off" >> config.txt
+	#echo "set gain tx1 30" >> config.txt
+	echo "set bandwidth tx1 20M" >> $DIR/config.txt
+	echo "set samplerate tx1 $samplerate" >> $DIR/config.txt
+	echo "tx config file=$DIR/testpythonfile.dat format=bin repeat=0" >> $DIR/config.txt
+	echo "set frequency rx $samplefr2" >> $DIR/config.txt
+	#echo "set agc rx1 off" >> config2.txt
+	#echo "set gain rx1 30" >> config2.txt
+	echo "set bandwidth rx 20M" >> $DIR/config.txt
+	echo "set samplerate rx $samplerate" >> $DIR/config.txt
+	echo "rx config file=$DIR/sweeptestPart2_'"$secondcounter"'sample.sc16q11 format=bin n=5000" >> $DIR/config.txt
+	echo "tx start;" >> $DIR/config.txt
+	echo "tx" >> $DIR/config.txt
+	echo "tx wait 500; tx stop" >> $DIR/config.txt
+	echo "rx start;" >> $DIR/config.txt
+	echo "rx" >> $DIR/config.txt
+	echo "rx wait" >> $DIR/config.txt
+	echo "clear" >> $DIR/config.txt
+	echo "exit" >> $DIR/config.txt
+
+
+	pythonCreateSignal="python3 $DIR/CreateSignal.py "\""$DIR/testpythonfile"\"" $fr2 $samplerate"
+
+
+	echo $fr2	
+
+	#generate the transmission file, transmit, and receive 5 MHz offset from the transmission
+	eval $pythonCreateSignal; bladeRF-cli -d *:serial=fe2c -s $DIR/config.txt; rm $DIR/config.txt
+
+
+
+	#take the FFT and write to a csv: <frequency, power>
+	eval "$pythonFFT2 $DIR/sweeptestPart2_'"$secondcounter"'sample.sc16q11 $firstcounter $fr2"
+
+	#remove the leftover file generated by the FFT script
+	rm $DIR/csvfile.csv
+	
+	#remove the sample we just took
+	rm $DIR/sweeptest*
+
+	#remove the transmit file
+	rm $DIR/testpythonfile.dat
+
+	#increase the frequency for the next sample
+	fr2=$( awk -v a=$pythonoffset -v b=$fr2 'BEGIN{print b+a}' )
+	samplefr2=$( awk -v a=$pythonoffset -v b=$samplefr2 'BEGIN{print b+a}' )
+	
+	#increase the counter so we dont overwrite any data in the csv
+	((secondcounter+=1))
+
+
+done
+
+
+}
+
+
+#automatically proceed with part 1
+S11Part1
+
+
+echo "Now switch the ports"
+
+#prompt the user for input to switch the ports, this is an endless loop of asking unless
+#the user enters any permutation of "yes"
+while true
+do
+ read -r -p "Are the ports switched? [Y/n] " input
+ 
+ case $input in
+     [yY][eE][sS]|[yY])
+S11Part2
+ break;;
+     [nN][oO]|[nN])
+ echo "Switch the ports"
+        ;;
+     *)
+ echo "Invalid input..."
+ ;;
+ esac
+done
+
+#create the final csv which is in the form <frequency, reflection coefficient>
+eval $pythonCSVFinal
+
+#remove data from part 1 and 2 as we no longer need it
+rm S11_part1.csv
+rm S11_part2.csv
+
+#plot the final csv
+eval $pythonPlot
+
