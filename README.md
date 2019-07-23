@@ -1,10 +1,23 @@
 # UNM-IEEE-APS-Student-Competiton-2019 ![UNM Antennas Logo](https://raw.github.com/jargyres/UNM-IEEE-APS-Student-Competiton-2019/master/Gui/src/Antennaslogo.png) 
 
+
+
 This project was the University of New Mexico's submission for the IEEE AP/S 2019 Student Design Competition. The prompt was to *"Propose a setup that characterizes/demonstrates the properties of an antenna system and provide educational material to explain these properties."*
+
+This project went to place third at IEEE AP/S 2019, you can read about it [here](https://engineering.unm.edu/news/2019/07/ece-team-wins-third-place-in-design-contest.html).
 
 
 For our project we decided to use Lego Mindstorms parts to create a turntable capable of doing 3D Radiation Patterns for an antenna. We used a 2 antenna setup were the antenna under test (AUT) was put on the Lego turntable and we took a known antenna and placed it in another Lego device to hold it. We then, using a software defined radio (SDR), transmit a signal from the AUT and look at the received power at the known antenna. We can then mark down the power and degree the AUT was at and create a 2D radiation pattern for the antenna.
 
+The next part of our testing was to take the S11 of the antenna, which is the reflected power of the antenna across a span of frequencies. We accomplished this by using a dual directional coupler.
+
+
+
+
+
+Check out our video below showing the full project and results.
+
+[![UNM-IEEE-APS-2019](http://img.youtube.com/vi/l86pVJDWy_k/0.jpg)](http://www.youtube.com/watch?v=l86pVJDWy_k "UNM-IEEE-APS-2019")
 
 
 **[Required Materials](#required-materials)**<br>
@@ -63,9 +76,53 @@ We can
 
 To use the BrickPi libraries, we need to use Raspbian for Robots, a Debian based Linux distro for the Raspberry Pi and BrickPi.
 
-To do, navigate to [Dexter Industries](https://www.dexterindustries.com/howto/install-raspbian-for-robots-image-on-an-sd-card/) main site for details onto burning Raspbian for Robots onto the SD card. 
+To do, navigate to [Dexter Industries](https://www.dexterindustries.com/howto/install-raspbian-for-robots-image-on-an-sd-card/) main site for details onto burning Raspbian for Robots onto the SD card.
+
+### Python Code
+
+To get the code working on python, clone the repoitory into the Raspberry Pi, then move the Raspberry Pi Scripts into the home directory of the Raspberry Pi. It must either be in the home folder, or you will need to edit the shell scripts to call the absolute path of the python scripts.
 
 ## Usage Instructions
+
+### S11 Measurement
+
+We need to do the S11 measurement first to see the resonant frequency of the AUT.
+
+   * To do this you need to change directory to the "Executables" folder. Then run the command
+     ```
+     sudo chmod a+x GeneralizedS11Measurement
+     ```
+     This will make our S11 Measurment file executable so that we can run it from the command line.
+     
+   * Once the file is executable, plug in the BladeRF SDR into your computer.
+   
+        We need to change the serial string on GeneralizedS11Bash.sh
+        
+        To do this enter bladeRF-cli by entering
+        
+        ```
+        bladeRF-cli -e info
+        ```
+        
+        You should then see a string for the "Serial #"
+        
+        Copy that string and change line 156 in GeneralizedS11Bash.sh to the new serial
+        
+        
+   * To run GeneralizedS11Bash.sh type
+     ```
+     sudo /path/to/script/GeneralizedS11Bash
+     ```
+     
+     This will run the S11 script
+     
+   * Now we 
+   
+        
+        
+   
+  
+
 
 ## Compatibility
 
