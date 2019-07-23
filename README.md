@@ -108,6 +108,8 @@ We need to do the S11 measurement first to see the resonant frequency of the AUT
         
         Copy that string and change line 156 in GeneralizedS11Bash.sh to the new serial
         
+   * We can also have to plug in our AUT into the "output" port of the coupler, plug the transmitting end into the "input" and the receiving end at the correct ports according the video.
+        
         
    * To run GeneralizedS11Bash.sh type
      ```
@@ -116,7 +118,7 @@ We need to do the S11 measurement first to see the resonant frequency of the AUT
      
      This will run the S11 script
      
-   * Now we 
+   * Now we run the script, we are prompted to set our desired variables 
    
         
         
