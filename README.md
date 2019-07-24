@@ -11,14 +11,8 @@ For our project we decided to use Lego Mindstorms parts to create a turntable ca
 
 The next part of our testing was to take the S11 of the antenna, which is the reflected power of the antenna across a span of frequencies. We accomplished this by using a dual directional coupler.
 
-
-
-
-
 Check out our video below showing the full project and results.
-
-[![UNM-IEEE-APS-2019](http://img.youtube.com/vi/l86pVJDWy_k/0.jpg)](http://www.youtube.com/watch?v=l86pVJDWy_k "UNM-IEEE-APS-2019")
-
+[![UNM-IEEE-sPS-2019](https://raw.github.com/jargyres/UNM-IEEE-APS-Student-Competiton-2019/master/Images/youtube-Thumbnail.png)](https://www.youtube.com/watch?v=giouzUH5rOc)
 
 **[Required Materials](#required-materials)**<br>
 **[Installation Instructions](#installation-intructions)**<br>
