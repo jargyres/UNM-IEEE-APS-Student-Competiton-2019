@@ -17,8 +17,9 @@ Check out our video below showing the full project and results.
 **[Required Materials](#required-materials)**<br>
 **[Installation Instructions](#installation-intructions)**<br>
 **[Usage Instructions](#usage-instructions)**<br>
-**[Troubleshooting](#troubleshooting)**<br>
 **[Compatibility](#compatibility)**<br>
+**[Authors and Acknowledgments](#authors-and-acknowledgments)**<br>
+
 
 
 ## Required Materials
@@ -112,14 +113,54 @@ We need to do the S11 measurement first to see the resonant frequency of the AUT
      
      This will run the S11 script
      
-   * Now we run the script, we are prompted to set our desired variables 
+   * Now we run the script, we are prompted to set our desired variables
+     * Frequency
+     
+          This will be the center frequency of the test. Enter frequency in Hz.
+          
+     * Resolution
+          
+          The resolution is the distance between samples. High is a sample every 1 MHz step, Medium is 5 Mhz steps, Low is 10 MHz steps.
+     
+     * Bandwidth
+          
+          The bandwidth is the size of the span of frequencies we will sweep across. For example, if you set your center frequency to 3 GHz and the badnwidth to 600 MHz, the sweep would be from 2.7 GHz to 3.3 GHz.
    
-        
-        
+   * When part one is finished, swap the load and the receiving port and enter "yes" to the prompt. This will automatically start part 2 of the test. When this is done a matplotlib graph will show up of your S11 Measurement. This will also leave a file "finalS11.csv", which is in the form <frequency (in Hz), return loss> 
+               
    
-  
+   
+### Radiation Pattern Measurement
+
+To begin the radiation pattern measurement, we need to set up the raspberry pi and our laptop. 
+
+   * Raspberry pi
+     
+     When we call our python scripts to control the lego turntable, we are using the secure shell (SSH) protocol. This is called during the bash scripts. Due to this we need to have an IP address from the raspberry pi. There are a couple ways of doing this. The way we did it was setting up isc-dhcp-server on our Ubuntu laptop. This let us directly connect to the raspberry pi through a ethernet cable by setting a static IPv4 address to our ethernet adapter. This lets us always keep the scripts the same as the IP address never changes. You could also just manually find the IP address and edit the scripts.
+     
+   * Turntable
+   
+      the turntable needs to have its motors plugged into the BrickPi 3 to control them. To do this plug the motor that controls the Bottom into the "MA" port, the motor that controls the top portion into "MB" and the color sensor into "S1"
+      
+   * Now we are ready to run the script. To run enter
+        ```
+        sudo /path/to/script/GeneralizedRadiationPattern <frequency>
+        ```
+        
+        Enter the frequency in the same way as the S11 script, in Hz. 
+        
+        The script will start running and display a live polar plot of the radiation pattern. When it is done the script will leave a csv file in the form of <degree, power (db)>
+
+### Compatibility
+
+Our scripts will be able to run in any bash shell, such as the ones that come with macOS Mojave and most Linux distributions. 
 
 
-## Compatibility
+### Authors and Acknowledgments
 
-### Troubleshooting
+* **John Argyres**
+* **Arjun Gupta**
+* **Ralph Lyndon Gesner**
+
+Special thanks to IEEE for the funding of this project. To the University of New Mexico for their facilities and people who helped us along the way. 
+
